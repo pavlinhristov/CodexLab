@@ -1,3 +1,5 @@
+"""Manage task records through the JSON storage layer."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -7,18 +9,35 @@ from .store import load_tasks, next_task_id, save_tasks
 
 
 def list_tasks(status: str | None = None, q: str | None = None) -> list[dict[str, Any]]:
-    """Return task records, optionally filtered by status and search text."""
+    """Read task records matching the supplied status and search filters.
+
+    Args:
+        status: Status string to match, or None to include every status.
+        q: Case-insensitive substring to find in the title or description,
+            or None to omit text filtering. Whitespace is matched literally.
+
+    Returns:
+        A list of matching task dictionaries in storage order. Does not write
+        to storage.
+
+    Raises:
+        OSError: If the task file cannot be read.
+        json.JSONDecodeError: If the task file contains invalid JSON.
+    """
     tasks = load_tasks()
+    normalized_query = q.casefold() if q is not None else None
     filtered: list[dict[str, Any]] = []
 
     for task in tasks:
-        # Instructor note: intentional bug for the lab.
-        # This uses the literal string "status" instead of the query parameter value.
-        if status and task["status"] != "status":
+        if status and task["status"] != status:
             continue
 
-        # Instructor note: partial feature for the lab.
-        # The route already accepts `q`, but search is not implemented yet.
+        if normalized_query is not None and not (
+            normalized_query in task["title"].casefold()
+            or normalized_query in task["description"].casefold()
+        ):
+            continue
+
         filtered.append(task)
 
     return filtered
@@ -48,17 +67,27 @@ def create_task(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def complete_task(task_id: int) -> dict[str, Any] | None:
-    """Mark a task as completed."""
+    """Mark a stored task as completed and save it before returning.
+
+    Args:
+        task_id: Integer identifier of the task to complete.
+
+    Returns:
+        The saved task dictionary, or None if the identifier is absent.
+        Rewrites the collection with the selected task's status and current
+        UTC completion timestamp; leaves unrelated records unchanged.
+
+    Raises:
+        OSError: If the task file cannot be read or written.
+        json.JSONDecodeError: If the task file contains invalid JSON.
+    """
     tasks = load_tasks()
 
     for task in tasks:
         if task["id"] == task_id:
-            updated_task = dict(task)
-            updated_task["status"] = "done"
-            updated_task["completed_at"] = datetime.now(timezone.utc).isoformat()
-
-            # Instructor note: intentional bug for the lab.
-            # The updated task is returned, but the stored list is never updated or saved.
-            return updated_task
+            task["status"] = "done"
+            task["completed_at"] = datetime.now(timezone.utc).isoformat()
+            save_tasks(tasks)
+            return task
 
     return None

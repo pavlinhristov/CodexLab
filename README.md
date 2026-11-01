@@ -318,6 +318,19 @@ Suggested verification prompt:
 
 Note: the completion endpoint writes to `data/tasks.json` after you fix Bug B. That is expected during testing. Just make sure you ask Codex to review that file before the final commit.
 
+
+### Run automated regression tests
+
+From the repository root, use the virtual environment created during setup (verified with Python 3.14.4):
+
+```bash
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python -m unittest discover -s tests -v
+```
+
+The suite covers status filtering, completion persistence, case-insensitive search, combined filters, and validation errors. Tests use temporary JSON files and leave `data/tasks.json` unchanged. A running server is not required.
+
+
 ### Verify the application still runs
 
 ```bash
