@@ -12,13 +12,12 @@ def list_tasks(status: str | None = None, q: str | None = None) -> list[dict[str
     filtered: list[dict[str, Any]] = []
 
     for task in tasks:
-        # Instructor note: intentional bug for the lab.
-        # This uses the literal string "status" instead of the query parameter value.
-        if status and task["status"] != "status":
+        if status and task["status"] != status:
             continue
 
-        # Instructor note: partial feature for the lab.
-        # The route already accepts `q`, but search is not implemented yet.
+        if q and q.casefold() not in f"{task['title']} {task['description']}".casefold():
+            continue
+
         filtered.append(task)
 
     return filtered
@@ -56,9 +55,8 @@ def complete_task(task_id: int) -> dict[str, Any] | None:
             updated_task = dict(task)
             updated_task["status"] = "done"
             updated_task["completed_at"] = datetime.now(timezone.utc).isoformat()
-
-            # Instructor note: intentional bug for the lab.
-            # The updated task is returned, but the stored list is never updated or saved.
+            tasks[tasks.index(task)] = updated_task
+            save_tasks(tasks)
             return updated_task
 
     return None
