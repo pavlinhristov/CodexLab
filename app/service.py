@@ -11,6 +11,8 @@ def list_tasks(status: str | None = None, q: str | None = None) -> list[dict[str
     tasks = load_tasks()
     filtered: list[dict[str, Any]] = []
 
+    caseless  = q.casefold() if q else None
+
     for task in tasks:
         # Instructor note: intentional bug for the lab.
         # This uses the literal string "status" instead of the query parameter value.
@@ -19,6 +21,8 @@ def list_tasks(status: str | None = None, q: str | None = None) -> list[dict[str
 
         # Instructor note: partial feature for the lab.
         # The route already accepts `q`, but search is not implemented yet.
+        if caseless and caseless not in task["title"].casefold() and caseless not in task["description"].casefold():
+            continue
         filtered.append(task)
 
     return filtered
