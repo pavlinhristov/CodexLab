@@ -43,7 +43,7 @@ def add_task(payload: TaskCreate) -> Task:
     return create_task(payload.model_dump())
 
 
-@app.post("/tasks/{task_id}/complete", response_model=Task)
+@app.post("/tasks/{task_id}", response_model=Task)
 def complete_existing_task(task_id: int) -> Task:
     task = complete_task(task_id)
     if task is None:
